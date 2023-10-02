@@ -4,8 +4,6 @@ import * as fs from "fs";
 import * as path from "path";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { SearchCommand } from "./commands/search.js";
-import { RefactorSearchCommand } from "./commands/refactored_search.js";
-
 export interface MyClient extends Client {
     commands: Collection<string, Command>;
     events: Collection<string, CustomDiscordEvent>;
@@ -93,13 +91,7 @@ for (const file of commandFiles) {
         client.commands.set(searchCommand.data.name, searchCommand);
         continue;
     }
-
-    if(instance instanceof RefactorSearchCommand) {
-        const searchCommand = new classType(qdrant);
-        register.push(searchCommand.data.toJSON());
-        client.commands.set(searchCommand.data.name, searchCommand);
-        continue;
-    }
+    
     register.push(instance.data.toJSON());
     client.commands.set(instance.data.name, instance);
 }

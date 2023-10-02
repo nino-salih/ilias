@@ -1,10 +1,9 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, SlashCommandBuilder, blockQuote, italic } from "discord.js";
-import { Command, MyClient } from "../app.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, CacheType, ChatInputCommandInteraction, ComponentType, Message, SlashCommandBuilder, blockQuote, italic } from "discord.js";
+import { Command } from "../app.js";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import axios from "axios";
-import { source, stripIndents } from "common-tags";
+import { stripIndents } from "common-tags";
 import { ComponentTimeout } from "../utils/component_timeout.js";
-import { SearchButtonEvent } from "../event/search_button_event.js";
 
 type TensorType = {
     dims: number[];
@@ -59,15 +58,24 @@ export class SearchCommand implements Command {
 
     readonly data = new SlashCommandBuilder()
         .setName("search")
-        .setDescription("Searches for a given term")
-        .addStringOption(option => option.setName("term").setDescription("The term to search for").setMinLength(1).setMaxLength(100).setRequired(true))
+        .setDescription("Searches a given term")
+        .addStringOption(option => option.setName("term").setDescription("The term to search for (only use English)").setMinLength(1).setMaxLength(100).setRequired(true))
         .addIntegerOption(option => option.setName("count").setDescription("The number of results to return").setMinValue(2).setMaxValue(15).setRequired(false));
 
+
+    private readonly previousButtonId = 'refactor_search_button_previous_result';
+
+    private readonly nextButtonId = 'refactor_search_button_next_result';
 
     constructor(qdrant: QdrantClient) {
         this.qdrant = qdrant;
     }
 
+    /**
+     * Executes the search command.
+     * @param interaction - The interaction object.
+     * @returns Promise<void>
+     */
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
 
@@ -85,18 +93,46 @@ export class SearchCommand implements Command {
 
         let currentMessage = 0;
 
-        const myClient = interaction.client as MyClient;
-
-        const row = SearchCommand.createButtons(message, currentMessage);
+        const row = this.createButtons(message, currentMessage);
 
         const reply = await interaction.editReply({
             content: message[currentMessage].content,
             components: [row],
         });
 
-        //Set return values
-        this.timeout.scheduleComponentTimeout(reply, SearchCommand.TIMEOUT_N, SearchButtonEvent.keepLinkButtonOnlyOrDeleteAll)
-        myClient.functionValues.set(reply.id, [message, currentMessage, count, this.timeout]);
+
+
+        const collector = reply.createMessageComponentCollector({ 
+            filter: (i: { user: { id: string; }; }) => i.user.id === interaction.user.id,
+            componentType: ComponentType.Button,
+            time: SearchCommand.TIMEOUT_N });
+        
+
+        const previous = new ButtonBuilder()
+			.setCustomId(this.previousButtonId)
+			.setLabel('Previous')
+			.setStyle(ButtonStyle.Primary);
+
+		const next = new ButtonBuilder()
+			.setCustomId(this.nextButtonId)
+			.setLabel('Next')
+			.setStyle(ButtonStyle.Primary);
+
+
+        collector.on("collect", async (interaction) => {  
+            interaction.deferUpdate(); 
+            if(interaction.customId == this.nextButtonId && currentMessage < count) {
+                ({ currentMessage } = await this.nextMenuItem(currentMessage, previous, next, count, message, row, interaction));
+    
+            } else if(interaction.customId == this.previousButtonId && currentMessage > 0) {
+                ({ currentMessage } = await this.previousMenuItem(currentMessage, next, previous, message, row, interaction));
+            }
+            collector.resetTimer();
+        });
+
+        collector.on("end", async () => {
+            await SearchCommand.keepLinkButtonOnlyOrDeleteAll(reply);
+        });
 
     }
 
@@ -112,6 +148,11 @@ export class SearchCommand implements Command {
         
     }
 
+    /**
+     * Creates a message to be sent in response to a search query.
+     * @param result An array of Result objects containing information about the search results.
+     * @returns An array of SearchString objects containing the constructed message and the URL of the source.
+     */
     private async createMessage(result: Result[]) : Promise<SearchString[]> {
         const message : SearchString[] = [];
         const max_content_length = 2000;
@@ -129,8 +170,6 @@ export class SearchCommand implements Command {
                 content = content.slice(0, -to_cut) + " ...";
             }
 
-            //#:~:text=
-
             const construction = stripIndents`
             ${title}\n
             ${content}\n
@@ -142,15 +181,98 @@ export class SearchCommand implements Command {
         return message;
     }
 
-    static createButtons(message: SearchString[], currentMessage: number) {
+    /**
+     * Displays the previous menu item in a list of search results.
+     * @param currentMessage The current message index.
+     * @param next The ButtonBuilder for the "Next" button.
+     * @param previous The ButtonBuilder for the "Previous" button.
+     * @param message An array of SearchString objects representing the search results.
+     * @param row An ActionRowBuilder for the row of buttons.
+     * @param interaction The ButtonInteraction that triggered the method.
+     * @returns An object containing the updated current message index.
+     */
+    private async previousMenuItem(currentMessage: number, next: ButtonBuilder, previous: ButtonBuilder, message: SearchString[], row: ActionRowBuilder<ButtonBuilder>, interaction: ButtonInteraction<CacheType>) {
+        currentMessage--;
+        next.setDisabled(false);
+        previous.setDisabled(false);
+
+        if (currentMessage == 0) {
+            previous.setDisabled(true);
+
+        }
+
+        if (message[currentMessage].url) {
+            const source = new ButtonBuilder()
+                .setLabel('Source')
+                .setStyle(ButtonStyle.Link)
+                .setURL(message[currentMessage].url ?? '');
+
+            row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(previous, next, source);
+
+        } else {
+            row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(previous, next);
+        }
+
+        await interaction.message.edit({ content: message[currentMessage].content, components: [row] });
+        return { currentMessage };
+    }
+
+        /**
+     * Displays the next menu item in a list of search results.
+     * @param currentMessage The current message index.
+     * @param next The ButtonBuilder for the "Next" button.
+     * @param previous The ButtonBuilder for the "Previous" button.
+     * @param message An array of SearchString objects representing the search results.
+     * @param row An ActionRowBuilder for the row of buttons.
+     * @param interaction The ButtonInteraction that triggered the method.
+     * @returns An object containing the updated current message index.
+     */
+    private async nextMenuItem(currentMessage: number, previous: ButtonBuilder, next: ButtonBuilder, count: number, message: SearchString[], row: ActionRowBuilder<ButtonBuilder>, interaction: ButtonInteraction<CacheType>) {
+        currentMessage++;
+        previous.setDisabled(false);
+        next.setDisabled(false);
+
+        if (currentMessage == count - 1) {
+            next.setDisabled(true);
+        }
+
+
+
+        if (message[currentMessage].url) {
+            const source = new ButtonBuilder()
+                .setLabel('Source')
+                .setStyle(ButtonStyle.Link)
+                .setURL(message[currentMessage].url ?? '');
+
+            row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(previous, next, source);
+
+        } else {
+            row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(previous, next);
+        }
+
+        await interaction.message.edit({ content: message[currentMessage].content, components: [row] });
+        return { currentMessage };
+    }
+
+    /**
+     * Creates the button row for the search results.
+     * @param message An array of SearchString objects representing the search results.
+     * @param currentMessage The index of the current search result.
+     * @returns An ActionRowBuilder containing the "Previous", "Next", and "Source" buttons (if applicable).
+     */
+     createButtons(message: SearchString[], currentMessage: number) {
         const previous = new ButtonBuilder()
-          .setCustomId('search_button_previous_result')
+          .setCustomId(this.previousButtonId)
           .setLabel('Previous')
           .setStyle(ButtonStyle.Primary)
           .setDisabled(true);
     
         const next = new ButtonBuilder()
-          .setCustomId('search_button_next_result')
+          .setCustomId(this.nextButtonId)
           .setLabel('Next')
           .setStyle(ButtonStyle.Primary);
     
@@ -169,6 +291,26 @@ export class SearchCommand implements Command {
     
         return row;
       }
+
+    /**
+     * Removes all buttons from a message except for the "Source" button (if it exists).
+     * @param message The message to modify.
+     */
+      private static async keepLinkButtonOnlyOrDeleteAll(message : Message) {
+        //Get the Link Button (source) and only add it aka remove the other buttons
+        const buttons = message.components[0]
+
+        for (const button of buttons.components) {
+            if(button.type == ComponentType.Button) {
+                if(button.url) {
+                    await message.edit({ components: [new ActionRowBuilder<ButtonBuilder>().addComponents(ButtonBuilder.from(button))] });
+                    return;
+                }
+            }
+        }
+
+        await message.edit({ components: [] });
+}
 
 }
 

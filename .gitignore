@@ -43,3 +43,6 @@ pnpm-lock.yaml
 
 # Ignore db files
 *.db
+
+# Ignore local qudrant files
+/qdrant_storage
