@@ -69,5 +69,25 @@ describe('Chicagognosis', () => {
             expect(content).not.toContain("Chicago Gnosis Podcast");
             expect(content).not.toContain("Your comment will be posted after it is approved.");
             });
+        //https://chicagognosis.org/scriptures/nietzsche-on-child-and-marriage
+        it("should download a Scriptures", async () => {
+            const content = await chicagognosis.download(
+                "https://chicagognosis.org/scriptures/nietzsche-on-child-and-marriage"
+            );
+            expect(content).toContain("the commander of your senses (pratyahara in the eightfold path of meditation)");
+            expect(chicagognosis.webpage.title).toBe("Nietzsche: On Child and Marriage");
+            expect(chicagognosis.webpage.author).toBe("Chicagognosis");
+            });
+
+        //https://chicagognosis.org/scriptures/nietzsche-on-child-and-marriage
+        it("Content on lectures should not have", async () => {
+            const content = await chicagognosis.download(
+                "https://chicagognosis.org/scriptures/nietzsche-on-child-and-marriage"
+            );
+            expect(content).not.toContain("Nietzsche: On Child and Marriage");
+            expect(content).not.toContain("11/24/2016 ");
+            expect(content).not.toContain("Chicago Gnosis Podcast");
+            expect(content).not.toContain("Leave a Reply");
+            });
         
   }); 

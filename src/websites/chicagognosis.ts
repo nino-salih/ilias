@@ -32,6 +32,14 @@ export class Chicagognosis extends Website {
               ".blog-header,.blog-comments-bottom,.blog-comment-area,.pb-audio-player,#commentArea",
             title: ".blog-title-link",
         },
+        {
+            //https://chicagognosis.org/scriptures/nietzsche-on-child-and-marriage
+            url: /https:\/\/chicagognosis\.org\/scriptures\/.*/,
+            selector: "#wsite-content",
+            remove:
+              ".blog-header,.blog-comments-bottom,.blog-comment-area,.pb-audio-player,#commentArea",
+            title: ".blog-title-link",
+        },
     ];
 
     async download(url: string): Promise<string> {
