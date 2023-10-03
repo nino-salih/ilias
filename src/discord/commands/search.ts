@@ -59,13 +59,15 @@ export class SearchCommand implements Command {
     readonly data = new SlashCommandBuilder()
         .setName("search")
         .setDescription("Searches a given term")
-        .addStringOption(option => option.setName("term").setDescription("The term to search for (only use English)").setMinLength(1).setMaxLength(100).setRequired(true))
+        .addStringOption(option => option.setName("term").setDescription("The term to search for (only use English)").setMinLength(1).setMaxLength(512).setRequired(true))
         .addIntegerOption(option => option.setName("count").setDescription("The number of results to return").setMinValue(2).setMaxValue(15).setRequired(false));
 
 
-    private readonly previousButtonId = 'refactor_search_button_previous_result';
+    private readonly previousButtonId = 'search_button_previous_result';
 
-    private readonly nextButtonId = 'refactor_search_button_next_result';
+    private readonly nextButtonId = 'search_button_next_result';
+
+    private readonly currentButtonId = 'search_button_current';
 
     constructor(qdrant: QdrantClient) {
         this.qdrant = qdrant;
@@ -93,7 +95,7 @@ export class SearchCommand implements Command {
 
         let currentMessage = 0;
 
-        const row = this.createButtons(message, currentMessage);
+        const row = this.createButtons(message, currentMessage, count);
 
         const reply = await interaction.editReply({
             content: message[currentMessage].content,
@@ -110,7 +112,7 @@ export class SearchCommand implements Command {
 
         const previous = new ButtonBuilder()
 			.setCustomId(this.previousButtonId)
-			.setLabel('Previous')
+			.setLabel('Prev')
 			.setStyle(ButtonStyle.Primary);
 
 		const next = new ButtonBuilder()
@@ -118,14 +120,13 @@ export class SearchCommand implements Command {
 			.setLabel('Next')
 			.setStyle(ButtonStyle.Primary);
 
-
         collector.on("collect", async (interaction) => {  
             interaction.deferUpdate(); 
             if(interaction.customId == this.nextButtonId && currentMessage < count) {
                 ({ currentMessage } = await this.nextMenuItem(currentMessage, previous, next, count, message, row, interaction));
     
             } else if(interaction.customId == this.previousButtonId && currentMessage > 0) {
-                ({ currentMessage } = await this.previousMenuItem(currentMessage, next, previous, message, row, interaction));
+                ({ currentMessage } = await this.previousMenuItem(currentMessage, previous, next, count, message, row, interaction));
             }
             collector.resetTimer();
         });
@@ -191,7 +192,7 @@ export class SearchCommand implements Command {
      * @param interaction The ButtonInteraction that triggered the method.
      * @returns An object containing the updated current message index.
      */
-    private async previousMenuItem(currentMessage: number, next: ButtonBuilder, previous: ButtonBuilder, message: SearchString[], row: ActionRowBuilder<ButtonBuilder>, interaction: ButtonInteraction<CacheType>) {
+    private async previousMenuItem(currentMessage: number, previous: ButtonBuilder, next: ButtonBuilder, count: number, message: SearchString[], row: ActionRowBuilder<ButtonBuilder>, interaction: ButtonInteraction<CacheType>) {
         currentMessage--;
         next.setDisabled(false);
         previous.setDisabled(false);
@@ -200,6 +201,11 @@ export class SearchCommand implements Command {
             previous.setDisabled(true);
 
         }
+        const currentPage = new ButtonBuilder()
+            .setCustomId(this.currentButtonId)
+            .setLabel(`${currentMessage + 1}/${count}`)
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true);
 
         if (message[currentMessage].url) {
             const source = new ButtonBuilder()
@@ -208,11 +214,11 @@ export class SearchCommand implements Command {
                 .setURL(message[currentMessage].url ?? '');
 
             row = new ActionRowBuilder<ButtonBuilder>()
-                .addComponents(previous, next, source);
+                .addComponents(previous, currentPage, next, source);
 
         } else {
             row = new ActionRowBuilder<ButtonBuilder>()
-                .addComponents(previous, next);
+                .addComponents(previous, currentPage, next);
         }
 
         await interaction.message.edit({ content: message[currentMessage].content, components: [row] });
@@ -238,6 +244,11 @@ export class SearchCommand implements Command {
             next.setDisabled(true);
         }
 
+        const currentPage = new ButtonBuilder()
+            .setCustomId(this.currentButtonId)
+            .setLabel(`${currentMessage + 1}/${count}`)
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true);
 
 
         if (message[currentMessage].url) {
@@ -247,11 +258,11 @@ export class SearchCommand implements Command {
                 .setURL(message[currentMessage].url ?? '');
 
             row = new ActionRowBuilder<ButtonBuilder>()
-                .addComponents(previous, next, source);
+                .addComponents(previous, currentPage, next, source);
 
         } else {
             row = new ActionRowBuilder<ButtonBuilder>()
-                .addComponents(previous, next);
+                .addComponents(previous, currentPage, next);
         }
 
         await interaction.message.edit({ content: message[currentMessage].content, components: [row] });
@@ -264,7 +275,7 @@ export class SearchCommand implements Command {
      * @param currentMessage The index of the current search result.
      * @returns An ActionRowBuilder containing the "Previous", "Next", and "Source" buttons (if applicable).
      */
-     createButtons(message: SearchString[], currentMessage: number) {
+     createButtons(message: SearchString[], currentMessage: number, count : number ) {
         const previous = new ButtonBuilder()
           .setCustomId(this.previousButtonId)
           .setLabel('Previous')
@@ -275,6 +286,12 @@ export class SearchCommand implements Command {
           .setCustomId(this.nextButtonId)
           .setLabel('Next')
           .setStyle(ButtonStyle.Primary);
+
+        const currentPage = new ButtonBuilder()
+          .setCustomId(this.currentButtonId)
+          .setLabel(`${currentMessage + 1}/${count}`)
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(true);
     
         let row: ActionRowBuilder<ButtonBuilder>;
     
@@ -284,9 +301,9 @@ export class SearchCommand implements Command {
             .setStyle(ButtonStyle.Link)
             .setURL(message[currentMessage].url ?? '');
     
-          row = new ActionRowBuilder<ButtonBuilder>().addComponents(previous, next, source);
+          row = new ActionRowBuilder<ButtonBuilder>().addComponents(previous, currentPage, next, source);
         } else {
-          row = new ActionRowBuilder<ButtonBuilder>().addComponents(previous, next);
+          row = new ActionRowBuilder<ButtonBuilder>().addComponents(previous, currentPage, next);
         }
     
         return row;
