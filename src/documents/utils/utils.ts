@@ -1,3 +1,11 @@
+/**
+ * Returns the first or last n words of a string, depending on the value of `fromStart`.
+ * If a word contains any of the characters in `notAllowedChars`, the function stops before that word.
+ * @param str - The input string.
+ * @param n - The number of words to return.
+ * @param fromStart - If `true`, returns the first n words. If `false`, returns the last n words.
+ * @returns The first or last n words of the input string.
+ */
 const notAllowedChars = ['-', '\n', '\t', '\r', '\f', '\v'];
 
 export function getNWords(str: string, n: number, fromStart: boolean = true): string {

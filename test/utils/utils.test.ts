@@ -1,8 +1,8 @@
 import {describe, expect, beforeEach, it, jest } from '@jest/globals';
 import axios from 'axios';
-import {Glorian} from '../../src/websites/glorian.js';
+import {Glorian} from '../../src/documents/websites/glorian.js';
 import { fail } from 'assert';
-import { getNWords } from '../../src/utils/utils.js';
+import { getNWords } from '../../src/documents/utils/utils.js';
 
 describe('getNWords', () => {
     it('should return the first n words from the start of the string', () => {

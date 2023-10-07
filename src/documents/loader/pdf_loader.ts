@@ -1,7 +1,7 @@
 import { DirectoryLoader, LoadersMapping } from "langchain/document_loaders/fs/directory";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import { EPubLoader } from "langchain/document_loaders/fs/epub";
-import { RecursiveCharacterTextSplitterWithTokenizer } from "../embedding.js";
+import { RecursiveCharacterTextSplitterWithTokenizer } from "../../embedding.js";
 import { Document } from "langchain/document";
 import { File } from "buffer";
 import * as fs from "fs";

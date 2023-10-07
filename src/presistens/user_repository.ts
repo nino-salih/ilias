@@ -3,19 +3,13 @@ import sqlite3 from 'sqlite3';
 import { Database, open } from 'sqlite';
 import * as fs from 'fs';
 
-const emailRegex = new RegExp('^(?:[a-z0-9!#$%&\'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&\'*+/=?^_`{|}~-]+)*|"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*")@(?:\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\]|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$');
-
-export function isValidEmail(email: string): boolean {
-  return emailRegex.test(email);
-}
-
-type User = {
-    id: number;
+export type User = {
+    id?: number;
     email: string;
     password: string;
 }
 
-class UserRepository implements Repository<User> {
+export class UserRepository implements Repository<User> {
     private db: Database<sqlite3.Database, sqlite3.Statement>;
 
     private constructor(db: Database<sqlite3.Database, sqlite3.Statement>) {
@@ -90,20 +84,35 @@ class UserRepository implements Repository<User> {
   }
 
     async find(id: User): Promise<User> {
-    const realId = id.id;
+    const statement = await this.db.prepare(`
+      SELECT * FROM users
+      WHERE email = ?;
+    `);
+
+    const user = await statement.get(id);
+
+    await statement.finalize();
+    if (!user) {
+      throw new Error(`User with email ${id} not found`);
+    }
+
+    return user as User;
+  }
+
+  async findByID(id: number): Promise<User> {
     const statement = await this.db.prepare(`
       SELECT * FROM users
       WHERE id = ?;
     `);
 
-    const user = await statement.get(realId);
+    const user = await statement.get(id);
 
     await statement.finalize();
     if (!user) {
-      throw new Error(`User with id ${realId} not found`);
+      throw new Error(`User with id ${id} not found`);
     }
 
-    return user;
+    return user as User;
   }
 
   async findAll(): Promise<User[]> {

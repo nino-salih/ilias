@@ -8,7 +8,7 @@ import sqlite3 from "sqlite3";
 import { Database, open } from "sqlite";
 import { SQLStatement } from "sql-template-strings";
 import * as fs from "fs";
-import { Repository, SQLDatabase, ToVisit, Visited } from "../presistens/repository.js";
+import { Repository, SQLDatabase, ToVisit, Visited } from "../../presistens/repository.js";
 
 abstract class Downloader {
 

@@ -84,7 +84,7 @@ export class SearchCommand implements Command {
         const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
         const term = interaction.options.getString("term");
 
-        const response = await axios.get(`http://localhost:${port}/?search=${encodeURIComponent(term as string)}`);
+        const response = await axios.get(`http://localhost:${port}/search/?search=${encodeURIComponent(term as string)}`);
         const tensor: TensorType = await response.data;
         const count = interaction.options.getInteger("count") ?? 5;
 

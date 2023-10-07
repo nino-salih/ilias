@@ -3,8 +3,8 @@ import { blockQuote, italic } from "discord.js";
 import { stripIndents } from "common-tags";
 import * as dotenv from "dotenv";
 import axios from "axios";
-import { getNWords } from "./utils/utils.js";
-import { FileDownloader } from "./downloader/downloader.js";
+import { getNWords } from "./documents/utils/utils.js";
+import { FileDownloader } from "./documents/downloader/downloader.js";
 
 type AnotherType = {
   dims: number[];

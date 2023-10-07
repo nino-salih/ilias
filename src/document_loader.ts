@@ -6,18 +6,18 @@ import {
   RecursiveCharacterTextSplitterWithTokenizer,
 } from "./embedding.js";
 import { QdrantClient } from "@qdrant/js-client-rest";
-import { Glorian } from "./websites/glorian.js";
+import { Glorian } from "./documents/websites/glorian.js";
 import { Point } from "./Point.js";
-import { PDFLoader } from "./loader/pdf_loader.js";
-import { FileDownloader } from "./downloader/downloader.js";
-import { Webpage } from "./websites/website.js";
+import { PDFLoader } from "./documents/loader/pdf_loader.js";
+import { FileDownloader } from "./documents/downloader/downloader.js";
+import { Webpage } from "./documents/websites/website.js";
 import { cat } from "@xenova/transformers";
 import { resolve } from "path";
 import { time } from "console";
-import { getNWords } from "./utils/utils.js";
+import { getNWords } from "./documents/utils/utils.js";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { ConsoleColors } from "./downloader/console_color.js";
+import { ConsoleColors } from "./documents/downloader/console_color.js";
 
 export interface Metadata {
   title?: string;

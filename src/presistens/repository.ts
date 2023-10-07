@@ -3,13 +3,13 @@ import { Database, open } from "sqlite";
 import * as fs from "fs";
 
 export interface Repository<T> {
-
     save(entity: T): Promise<T>;
     saveAll(entities: T[] | Set<T>): Promise<T[] | Set<T>>;
     delete(entity: T): Promise<T>;
     deleteAll(entity: T[]): Promise<T[]>;
     update(entity: T): Promise<T>;
     find(id: T): Promise<T>;
+    findByID(id: number): Promise<T>;
     findAll(id: T): Promise<T[]>;
 
 }
@@ -39,6 +39,9 @@ export class SQLDatabase<T> implements Repository<T> {
 
     private constructor(db: Database<sqlite3.Database, sqlite3.Statement>) {
         this.db = db;
+    }
+    findByID(id: number): Promise<T> {
+        throw new Error("Method not implemented.");
     }
     create<T>(): Promise<Repository<T>> {
         throw new Error("Method not implemented.");
