@@ -125,6 +125,7 @@ describe('Glorian', () => {
             "https://glorian.org/learn/courses-and-lectures/alchemy/the-elements-in-spiritual-growth"
           );
           expect(content).toContain("This word spirit in English has been terribly abused, especially in the last one hundred years");
+          expect(content).not.toContain("The Elements in Spiritual Growth");
           expect(glorian.webpage.title).toBe("The Elements in Spiritual Growth");
           expect(glorian.webpage.author).toBe("Gnostic Instructor");
           expect(glorian.webpage.course).toBe("Alchemy");

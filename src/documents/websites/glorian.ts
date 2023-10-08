@@ -142,7 +142,7 @@ export class Glorian implements Website {
           this.webpage.course = "Lectures by Samael Aun Weor"
         }
 
-        this.webpage.content = $(rule.selector).text();
+        this.webpage.content = $(rule.selector).text().replace(this.webpage.title ?? '', '');
 
         this.webpage.source = url;
 
@@ -153,15 +153,19 @@ export class Glorian implements Website {
   }
 
   private setInfo(rule: Rules, $: cheerio.CheerioAPI) {
+
+
     if (rule.title) {
       this.webpage.title = $(rule.title).text().trim();
-      $(rule.title).remove();
+      
     }
 
+    
     if (rule.author) {
       this.webpage.author = $(rule.author)
         .text()
         .replace("Written by: ", "")
+        .replace("A Book by:", "")
         .trim();
     }
 
@@ -176,8 +180,10 @@ export class Glorian implements Website {
       this.webpage.course = $(rule.course).text().trim().replace("Transcription from: ", "").replace(" Course", "");
     }
 
+
     if (rule.remove) {
       $(rule.remove).remove();
+      
     }
   }
 
