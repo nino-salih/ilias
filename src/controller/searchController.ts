@@ -1,4 +1,4 @@
-import { Embedding } from "../embedding.js";
+import { Embedding } from "../documents/embedding.js";
 import { Request, Response } from "express";
 
 const embedding = new Embedding();

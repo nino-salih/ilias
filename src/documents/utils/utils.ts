@@ -9,7 +9,7 @@
 const notAllowedChars = ['-', '\n', '\t', '\r', '\f', '\v'];
 
 export function getNWords(str: string, n: number, fromStart: boolean = true): string {
-    const words = str.split(' ');
+    const words = str.split(/ +/);
     let result = '';
   
     if (fromStart) {

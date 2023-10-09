@@ -1,7 +1,5 @@
-import {describe, expect, beforeEach, it, jest } from '@jest/globals';
+import {describe, expect, it, jest } from '@jest/globals';
 import axios from 'axios';
-import {Glorian} from '../../src/documents/websites/glorian.js';
-import { fail } from 'assert';
 import { Chicagognosis } from '../../src/documents/websites/chicagognosis.js';
 
 describe('Chicagognosis', () => {

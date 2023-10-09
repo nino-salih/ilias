@@ -101,33 +101,71 @@ export const postlogin = async (req : Request, res : Response) : Promise<void> =
   export const authenticateMiddleware = async (req: Request, res: Response, next: NextFunction) : Promise<void> => {
     try {
       // Get the token from the Authorization header
-      const token = req.headers.authorization?.split(' ')[1];
+      let token = req.headers.authorization?.split(' ')[1];
   
-      // If there is no token, return an error
+      // If there is no token, check if there is a cookie instead
       if (!token) {
+        try {
+          token = req.cookies.token;
+        } catch (err) {}
+        
+
+        if(!token) {
+
         res.status(401).json({ message: 'Authentication required' });
         return;
+        }
       }
   
       // Verify the token and get the user ID from the payload
-      const { id } = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
-  
-      // Find the user with the given ID
-      const user = await userRepo.findByID(parseInt(id));
-  
-      // If the user doesn't exist, return an error
-      if (!user) {
+      try {
+        const { id } = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+
+        // Find the user with the given ID
+        const user = await userRepo.findByID(parseInt(id));
+    
+        // Set the req.user property to the authenticated user
+        req.user = user;
+        
+        // If the user doesn't exist, return an error
+        if (!user) {
+          res.status(401).json({ message: 'Authentication required' });
+          return;
+        }
+      } catch (err) {
+        // If the token is expired, return an error
+        if (err instanceof jwt.TokenExpiredError) {
+          res.status(401).json({ message: 'Authentication expired' });
+          return;
+        }
+        // If the token is invalid, return an error
+        if (err instanceof jwt.JsonWebTokenError) {
+          res.status(401).json({ message: 'Authentication invalid' });
+          return;
+        }
+        // For any other errors, return an error
         res.status(401).json({ message: 'Authentication required' });
         return;
       }
-  
-      // Set the req.user property to the authenticated user
-      req.user = user;
-  
+
       // Call the next middleware function
       next();
+
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Internal server error' });
     }
   };
+
+  export async function isLoggedIn(token : string| undefined) : Promise<boolean> {
+      try {
+        if(!token) {
+          return false;
+        }
+        const { id } = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+        const user = await userRepo.findByID(parseInt(id));
+        return Boolean(user);
+      } catch (err) {
+        return false;
+      }
+  }

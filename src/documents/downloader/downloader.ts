@@ -2,12 +2,7 @@ import axios, { AxiosError } from "axios";
 import { Glorian } from "../websites/glorian.js";
 import { Webpage, Website } from "../websites/website.js";
 import * as cheerio from "cheerio";
-import { it } from "node:test";
 import { ConsoleColors } from "./console_color.js";
-import sqlite3 from "sqlite3";
-import { Database, open } from "sqlite";
-import { SQLStatement } from "sql-template-strings";
-import * as fs from "fs";
 import { Repository, SQLDatabase, ToVisit, Visited } from "../../presistens/repository.js";
 
 abstract class Downloader {

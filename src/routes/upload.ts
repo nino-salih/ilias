@@ -1,9 +1,10 @@
 import express from 'express';
-import { postUpload } from '../controller/uploadController.js';
+import { getUpload, postUpload, uploadMiddleware } from '../controller/uploadController.js';
 import { authenticateMiddleware } from '../controller/authController.js';
 
-const router = express.Router();
+const uploadRoute = express.Router();
 
-router.post('/upload', authenticateMiddleware, postUpload);
+uploadRoute.post('/upload', authenticateMiddleware, uploadMiddleware ,postUpload);
+uploadRoute.get('/upload', getUpload);
 
-export default router;
+export default uploadRoute;

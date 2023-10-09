@@ -26,17 +26,43 @@ type Result = {
         course?: string;
         book?: { isbn: string; title: string };
         author?: string;
+        loc: {
+            lines: {
+                from: number;
+                to: number;
+            }
+            pageNumber?: number;
+          };
+        pdf?: {
+            info: {
+            Author: string;
+            CreationDate: string;
+            Creator: string;
+            EncryptFilterName: string | null;
+            IsAcroFormPresent: boolean;
+            IsCollectionPresent: boolean;
+            IsLinearized: boolean;
+            IsSignaturesPresent: boolean;
+            IsXFAPresent: boolean;
+            Keywords: string;
+            Language: string | null;
+            ModDate: string;
+            PDFFormatVersion: string;
+            Producer: string;
+            Subject: string;
+            Title: string;
+            Trapped: {
+                name: string;
+            };
+            };
+            totalPages: number;
+        };
+        
       };
       location: {
         previous_chunk: string;
         next_chunk: string;
       };
-      loc: {
-        lines: {
-            from: number;
-            to: number;
-        }
-      }
     };
 }
 
@@ -50,6 +76,8 @@ export class SearchCommand implements Command {
     private readonly qdrant : QdrantClient;
 
     private readonly timeout : ComponentTimeout = new ComponentTimeout();
+
+    private readonly qdrant_collection = process.env.QDRANT_COLLECTION ?? "dev";
 
     readonly cooldown = 5;
 
@@ -91,6 +119,12 @@ export class SearchCommand implements Command {
         const data = Object.values(tensor.data).map(Number);
 
         const result = await this.searchQdrant(this.qdrant, data, count);
+
+
+        if(result.length == 0) {
+            await interaction.editReply("No results found");
+            return;
+        }
         const message = await this.createMessage(result);
 
         let currentMessage = 0;
@@ -138,7 +172,7 @@ export class SearchCommand implements Command {
     }
 
     private async searchQdrant(qdrant: QdrantClient, data: number[], count: number): Promise<Result[]> {
-        const result = await qdrant.search("test", {vector: data, limit: count});
+        const result = await qdrant.search(this.qdrant_collection, {vector: data, limit: count});
 
         const promises = result.map((point) => {
             return point as Result;
@@ -160,9 +194,18 @@ export class SearchCommand implements Command {
 
         for(const item of result) {
 
-            const title = item.payload?.metadata.title ? `# ${item.payload?.metadata.title}` : "";
-            let content = item.payload?.content ? blockQuote(item.payload?.content) : "";
-            const author = item.payload?.metadata.author ? "by " + italic(item.payload?.metadata.author) : "by " + italic("Unknown");
+            let title : string, content : string, author : string;
+
+            if(item.payload?.metadata.pdf) {
+            title = item.payload?.metadata.pdf.info.Title ? `# ${item.payload?.metadata.pdf.info.Title}` : "";
+            author = item.payload?.metadata.pdf.info.Author ? "by " + italic(item.payload?.metadata.pdf.info.Author) : "by " + italic("Unknown");
+            } else {
+            title = item.payload?.metadata.title ? `# ${item.payload?.metadata.title}` : "";
+            author = item.payload?.metadata.author ? "by " + italic(item.payload?.metadata.author) : "by " + italic("Unknown");
+            }
+            
+            content = item.payload?.content ? blockQuote(item.payload?.content) : "";
+            
 
             const construct_lenght = title.length + content.length + author.length + 4;
 
