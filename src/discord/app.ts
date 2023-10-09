@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { SearchCommand } from "./commands/search.js";
+import { typeScriptSupport } from "./utils/isTypescriptSupport.js";
 export interface MyClient extends Client {
     commands: Collection<string, Command>;
     events: Collection<string, CustomDiscordEvent>;
@@ -51,9 +52,16 @@ dotenv.config();
 
 const client = new Client({ presence: { status: "dnd" }, intents: [GatewayIntentBits.Guilds] }) as MyClient;
 
+if(!process.env.QDRANT_HOST?.includes("http")) {
+    process.env.QDRANT_HOST = "http://" + process.env.QDRANT_HOST;
+}
+
+const qdrant_host = process.env.QDRANT_HOST ?? "http://localhost";
+const qdrant_port = process.env.QDRANT_PORT ? parseInt(process.env.QDRANT_PORT,10) : 6333;
+
 const qdrant = new QdrantClient({
-    url: "http://localhost",
-    port: 6333,
+    url: qdrant_host,
+    port: qdrant_port,
   });
 
 // make sure the collection exists
@@ -69,10 +77,15 @@ client.once(Events.ClientReady, c => {
 
 const commandsPath = path.join(new URL('.', import.meta.url).pathname, 'commands');
 
-const eventPath = path.join(new URL('.', import.meta.url).pathname, 'event');
+//const eventPath = path.join(new URL('.', import.meta.url).pathname, 'event');
 
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.ts'));
-const eventFiles = fs.readdirSync(eventPath).filter(file => file.endsWith('.ts'));
+
+const commandFiles = typeScriptSupport ? fs.readdirSync(commandsPath).filter(file => file.endsWith('.ts')) 
+                                       : fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+
+
+//const eventFiles = fs.readdirSync(eventPath).filter(file => file.endsWith('.ts'));
 
 client.commands = new Collection();
 client.events = new Collection();
@@ -97,16 +110,16 @@ for (const file of commandFiles) {
 }
 
 
-for (const file of eventFiles) {
-    const module = await import(path.join(eventPath, file));
-    const classType = module[Object.keys(module)[0]];
-    const instance = new classType();
+// for (const file of eventFiles) {
+//     const module = await import(path.join(eventPath, file));
+//     const classType = module[Object.keys(module)[0]];
+//     const instance = new classType();
 
-    if(instance?.prefix == undefined || instance?.execute === undefined) {
-        throw new Error(`Event ${file} does not have a prefix or execute method`);
-    }
-    client.events.set(instance.prefix, instance);
-}
+//     if(instance?.prefix == undefined || instance?.execute === undefined) {
+//         throw new Error(`Event ${file} does not have a prefix or execute method`);
+//     }
+//     client.events.set(instance.prefix, instance);
+// }
 
 const token = process.env.DISCORD_TOKEN ?? "";
 
@@ -133,30 +146,30 @@ client.on(Events.InteractionCreate, async interaction => {
 }
 
 
-    if (interaction.isButton()) {
-        const event = client.events.find(name  => interaction.customId.startsWith(name.prefix));
+//     if (interaction.isButton()) {
+//         const event = client.events.find(name  => interaction.customId.startsWith(name.prefix));
 
-        if(!event) {
-            //console.error(`No command matching ${interaction.customId} was found.`);
-            return;
-        }
+//         if(!event) {
+//             //console.error(`No command matching ${interaction.customId} was found.`);
+//             return;
+//         }
 
-        	try {
+//         	try {
 
-                const args = client.functionValues.get(interaction.message.id) ?? [];
+//                 const args = client.functionValues.get(interaction.message.id) ?? [];
 
-                await event.execute(interaction, ...args);
+//                 await event.execute(interaction, ...args);
 
 		
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-		}
-	}
-}
+// 	} catch (error) {
+// 		console.error(error);
+// 		if (interaction.replied || interaction.deferred) {
+// 			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+// 		} else {
+// 			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+// 		}
+// 	}
+// }
 });
 
 //await deploy(register, token, process.env.DISCORD_CLIENT_ID ?? "", process.env.DISCORD_DEV_GUILD ?? "")
