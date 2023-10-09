@@ -1,0 +1,34 @@
+# Ignore build output
+/build
+
+# Ignore node_modules directory
+/node_modules
+
+# Ignore editor and IDE files
+.vscode/
+.idea/
+
+# Ignore test output
+/coverage
+.nyc_output
+
+# Ignore Doc Folder
+/doc
+
+# Ignore db files
+*.db
+
+# Ignore local qudrant files
+/qdrant_storage
+
+#Ignore Docker files
+Dockerfile.*
+
+# Ignore readme
+readme.md
+
+# Ignore .env files
+.env*
+
+# Ignore .git
+.git

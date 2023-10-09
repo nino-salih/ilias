@@ -114,8 +114,8 @@
     "require": ["tsconfig-paths/register"]
   },
 
-  "exclude": [
-    "*.config.ts",
-  ],
+  "include": [
+    "src/**/*.ts"
+  ]
 
 }

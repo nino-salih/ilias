@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   qdrant:
     image: qdrant/qdrant
@@ -6,3 +7,35 @@ services:
       - "6333:6333"
     volumes:
       - "./qdrant_storage:/qdrant/storage"
+  
+  ilias-web:
+    build: 
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: ilias-web
+    depends_on:
+      - qdrant
+    ports:
+      - "7000:7000"
+    environment:
+      ILIAS_PORT: 7000
+      JWT_SECRET: ${JWT_SECRET}
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION: dev
+      ALLOW_REGISTRATION: false
+  
+  ilias-discord:
+    build: 
+      context: .
+      dockerfile: Dockerfile.discord
+    container_name: ilias-discord
+    depends_on:
+      - qdrant
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION: dev
+      ILIAS_PORT: 7000
+      ILIAS_HOST: ilias-web
