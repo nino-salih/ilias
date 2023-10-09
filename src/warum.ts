@@ -32,7 +32,7 @@ try {
       };
   });
 
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const port = process.env.ILIAS_PORT ? parseInt(process.env.ILIAS_PORT, 10) : 3000;
   const term = "death";
   const response = await axios.get(`http://localhost:${port}/?search=${encodeURIComponent(term as string)}`);
   const tensor: AnotherType = await response.data;

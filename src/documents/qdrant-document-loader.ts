@@ -22,17 +22,24 @@ export interface Metadata {
 
 export class QdrantDocumentLoader {
   private readonly embedding = new Embedding();
-  private readonly qdrant = new QdrantClient({
-    url: process.env.QDRANT_URL ?? "http://localhost",
-    port: process.env.QDRANT_PORT ? parseInt(process.env.QDRANT_PORT,10) : 6333,
-  });
+  private readonly qdrant!: QdrantClient;
   private readonly qdrantCollectionName = process.env.QDRANT_COLLECTION ?? "dev";
 
   private readonly splitter = new RecursiveCharacterTextSplitterWithTokenizer({
     chunkSize: 512,
     chunkOverlap: 32,
   });
-  
+
+  private constructor() {
+    if(!process.env.QDRANT_HOST?.includes("http")) {
+      process.env.QDRANT_HOST = "http://" + process.env.QDRANT_HOST;
+    }
+    
+    this.qdrant = new QdrantClient({
+      url: process.env.QDRANT_HOST ?? "http://localhost",
+      port: process.env.QDRANT_PORT ? parseInt(process.env.QDRANT_PORT,10) : 6333,
+    });
+  }
 
   static async create(): Promise<QdrantDocumentLoader> {
     dotenv.config();
@@ -50,6 +57,8 @@ export class QdrantDocumentLoader {
           distance: "Cosine",
         },
         shard_number: 2,
+      }).catch((error) => {
+        throw new Error(`Failed to create collection: Is Qdrant running under ${process.env.QDRANT_HOST ?? "http://localhost"}:${process.env.QDRANT_PORT ? parseInt(process.env.QDRANT_PORT,10) : 6333}?`);
       });
     
       console.log("Collection created");

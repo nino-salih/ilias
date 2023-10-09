@@ -24,7 +24,7 @@ app.use('/', (req, res) => {
   res.redirect('/upload');
 });
 
-const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const port = process.env.ILIAS_PORT ? parseInt(process.env.ILIAS_PORT, 10) : 3000;
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });

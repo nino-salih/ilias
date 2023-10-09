@@ -97,8 +97,16 @@ export class SearchCommand implements Command {
 
     private readonly currentButtonId = 'search_button_current';
 
+    private readonly  port = process.env.ILIAS_PORT ? parseInt(process.env.ILIAS_PORT, 10) : 3000;
+
+    private host = process.env.ILIAS_HOST ?? "http://localhost";
+
     constructor(qdrant: QdrantClient) {
         this.qdrant = qdrant;
+
+        if(!this.host.includes("http")) {
+            this.host = "http://" + this.host;
+        }
     }
 
     /**
@@ -109,10 +117,10 @@ export class SearchCommand implements Command {
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
 
-        const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+        
         const term = interaction.options.getString("term");
 
-        const response = await axios.get(`http://localhost:${port}/search/?search=${encodeURIComponent(term as string)}`);
+        const response = await axios.get(`${this.host}:${this.port}/search/?search=${encodeURIComponent(term as string)}`);
         const tensor: TensorType = await response.data;
         const count = interaction.options.getInteger("count") ?? 5;
 
