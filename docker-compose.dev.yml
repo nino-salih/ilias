@@ -13,6 +13,7 @@ services:
       context: .
       dockerfile: Dockerfile.web
     container_name: ilias-web
+    restart: always
     depends_on:
       - qdrant
     ports:
@@ -23,17 +24,20 @@ services:
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
       QDRANT_COLLECTION: dev
-      ALLOW_REGISTRATION: false
+      ALLOW_REGISTRATION: true
   
   ilias-discord:
     build: 
       context: .
       dockerfile: Dockerfile.discord
     container_name: ilias-discord
+    restart: always
     depends_on:
       - qdrant
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_DEV_GUILD: ${DISCORD_DEV_GUILD}
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
       QDRANT_COLLECTION: dev
