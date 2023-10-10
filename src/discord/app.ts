@@ -109,6 +109,8 @@ for (const file of commandFiles) {
     client.commands.set(instance.data.name, instance);
 }
 
+await deploy(register, process.env.DISCORD_TOKEN ?? "", process.env.DISCORD_CLIENT_ID ?? "", process.env.DISCORD_DEV_GUILD ?? "")
+
 
 // for (const file of eventFiles) {
 //     const module = await import(path.join(eventPath, file));
